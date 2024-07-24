@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import {useInputValidation} from "6pp";
 
 import {
   Container,
@@ -14,18 +13,35 @@ import {
 
 import { CameraAlt } from "@mui/icons-material";
 import { VisuallyhiddenInput } from "../components/Style/StyledComponent";
+import { useFileHandler, useInputValidation } from "6pp";
+import { userNameValidator } from "../utils/validators";
 const Login = () => {
   const [islogin, setislogin] = useState(true);
+  const avatar=useFileHandler("single");// for uploading the image
   function toggleLogin() {
     setislogin((prev) => !prev);
   }
 
-  const user=useInputValidation("") //initialize it with empty and provide this in form as value
-  const name=useInputValidation("");
-  const password=useInputValidation("");
+  function handleLogin(e){
+    e.preventDefault();
+  }
+  function handleSignUp(e){
+    e.preventDefault();
+  }
+
+  const username=useInputValidation("",userNameValidator) //initialize it with empty and provide this in form as value
+  const name=useInputValidation("");// you can also pass validator also with coma
+  const password=useInputValidation(""); //you can also use useStrongpassword from 6pp package for strong password validation
+
+  const bio=useInputValidation("");
   
   return (
-    <Container
+   <div style={
+    {
+      backgroundImage:"linear-gradient(rgba(200,200,200,0.5),rgba(120,110,220,0.5))"
+    }
+   }>
+     <Container
       component={"main"}
       maxWidth="xs"
       sx={{
@@ -52,6 +68,7 @@ const Login = () => {
                 marginTop: "1rem",
                
               }}
+              onSubmit={handleLogin}
             >
               <TextField
                 label="Username"
@@ -59,7 +76,18 @@ const Login = () => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                value={username.value}
+                onChange={username.changeHandler}
               />
+
+                {/* adding validator to username */}
+            
+              {username.error && (
+                <Typography color={"error"} variant="caption">
+                  {username.error}
+                </Typography>
+              )}
+
 
               <TextField
                 label="password"
@@ -68,6 +96,8 @@ const Login = () => {
                 type="password"
                 margin="normal"
                 variant="outlined"
+                value={password.value}
+                onChange={password.changeHandler}
               />
 
               <Button
@@ -98,6 +128,7 @@ const Login = () => {
                 width: "100%",
                 marginTop: "1rem",
               }}
+              onSubmit={handleSignUp}
             >
               <Stack position="relative" width={"10rem"} margin={"auto"}>
                 <Avatar
@@ -106,6 +137,7 @@ const Login = () => {
                     height: "10rem",
                     objectFit: "contain",
                   }}
+                  src={avatar.preview}
                 />
 
                 <IconButton
@@ -123,10 +155,20 @@ const Login = () => {
                 >
                   <>
                     <CameraAlt />
-                    <VisuallyhiddenInput type="file" />
+                    <VisuallyhiddenInput type="file" onChange={avatar.changeHandler} /> 
                   </>
                 </IconButton>
               </Stack>
+
+              {avatar.error && (
+                <Typography m={"1rem"}
+                  width={"fit-content"}
+                  display={"block"}
+                 color={"error"} 
+                 variant="caption">
+                  {avatar.error}
+                </Typography>
+              )}
 
               <TextField
                 label="Username"
@@ -134,7 +176,16 @@ const Login = () => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                value={username.value}
+                onChange={username.changeHandler}
               />
+
+              {username.error && (
+                <Typography color={"error"} variant="caption">
+                  {username.error}
+                </Typography>
+              )}
+
 
               <TextField
                 label="Name"
@@ -142,6 +193,8 @@ const Login = () => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                value={name.value}
+                onChange={name.changeHandler}
               />
 
               <TextField
@@ -150,6 +203,8 @@ const Login = () => {
                 fullWidth
                 margin="normal"
                 variant="outlined"
+                value={bio.value}
+                onChange={bio.changeHandler}
               />
 
               <TextField
@@ -159,7 +214,17 @@ const Login = () => {
                 type="password"
                 margin="normal"
                 variant="outlined"
+                value={password.value}
+                onChange={password.changeHandler}
               />
+              
+              {/* for pasword validation */}
+
+              {/* {password.error && (
+                <Typography color={"error"} variant="caption">
+                  {password.error}
+                </Typography>
+              )} */}
 
               <Button
                 fullWidth
@@ -183,6 +248,7 @@ const Login = () => {
         )}
       </Paper>
     </Container>
+   </div>
   );
 };
 
