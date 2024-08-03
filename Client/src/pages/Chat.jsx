@@ -5,7 +5,7 @@ import { graycolor } from '../components/constants/color';
 import { AttachFile as AttachFileIcon, Send as SendIcon } from '@mui/icons-material';
 import { InputBox } from '../components/Style/StyledComponent';
 import { Blue } from '../components/constants/color';
-import FileMenu from '../Dialog/FileMenu';
+import FileMenu from '../components/Dialog/FileMenu';
 import { sampleMessage } from '../components/constants/sampleData';
 import MessageComponenet from '../components/Shared/MessageComponenet';
 
@@ -32,7 +32,7 @@ const Chat = () => {
       {/* Message Render */}
       {
         sampleMessage.map((i)=>(
-          <MessageComponenet message={i} user={user}/>
+          <MessageComponenet key={i._id} message={i} user={user}/>
         ))
       }
       </Stack>

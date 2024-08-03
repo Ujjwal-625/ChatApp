@@ -51,8 +51,13 @@ export const samepleChats = [
 
   export const sampleMessage=[
     {
-      attachments: [],
-      content: "L*uda ka Message hai",
+      attachments: [
+        {
+          public_id: "abcd 2",
+          url: "https://www.w3schools.com/howto/img_avatar.png",
+        }
+      ],
+      content: "first Message hai",
       _id: "sfnsdjkfsdnfkjsbnd",
       sender: {
         _id: "user._id",
@@ -69,10 +74,10 @@ export const samepleChats = [
           url: "https://www.w3schools.com/howto/img_avatar.png",
         },
       ],
-      content: "",
-      _id: "sfnsdjkfsdnfkdddjsbnd",
+      content: "mesage by sender",
+      _id: "sfnsdjkfsdnfkdddjsbngdfgd",
       sender: {
-        _id: "sdfsdfsdf",
+        _id: "akjsd",
         name: "Chaman  2",
       },
       chat: "chatId",
