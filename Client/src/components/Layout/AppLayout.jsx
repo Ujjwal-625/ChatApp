@@ -16,8 +16,6 @@ const AppLayout = () => (WrappedComponent) => {
     const params = useParams();
     const chatId = params.chatid;
     console.log(chatId);
-
-    
     return (
       <div>
         <Title />

@@ -5,3 +5,5 @@ export const graycolor="rgba(247,247,247,1)"
 export const lightblue="#2694ab";
 
 export const matBlack="rgba(0,0,0,0.8)"
+
+export const bggradient="linear-gradient(rgba(200,200,200,0.5),rgba(120,110,220,0.5))"
