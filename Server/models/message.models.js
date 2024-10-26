@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { required } from "nodemon/lib/config";
 
 const messageSchema=new mongoose.Schema({
     content:String,
@@ -13,7 +12,7 @@ const messageSchema=new mongoose.Schema({
         ref:"ChatModel",
         required:true
     },
-    attachments:{
+    attachments:[{
         public_id:{
             type:String,
             required:true
@@ -22,7 +21,7 @@ const messageSchema=new mongoose.Schema({
             type:String,
             required:true
         }
-    }
+    }]
 
 },{timestamps:true});
 

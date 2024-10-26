@@ -6,4 +6,7 @@ const multerUpload =multer({
     }
 })
 const singleAvatar=multerUpload.single("avatar");
-export {singleAvatar};
+
+const attatchmentsMulter=multerUpload.array("files",5);//5 is maxcount 
+
+export {singleAvatar,attatchmentsMulter};
