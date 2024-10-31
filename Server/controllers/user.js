@@ -1,9 +1,13 @@
 import { compare } from "bcrypt";
 import {UserModel} from "../models/user.models.js";
 //create a new user and save it to db and also save in cookie
-import {cookieOptions, sendToken} from "../utils/features.js"
+import {cookieOptions, emitEvent, sendToken} from "../utils/features.js"
 import {TryCatch} from "../middlewares/error.js"
 import { ErrorHandler } from "../utils/utilty.js";
+import { ChatModel } from "../models/chat.models.js";
+import { RequestModel } from "../models/request.models.js";
+import { NEW_REQUEST, REFETCH_CHATS } from "../constants/events.js";
+import { getOtherMember } from "../lib/helper.js";
 
 const newUser=async(req,res)=>{
     const {name ,username,password ,bio,email}=req.body;
@@ -56,13 +60,174 @@ const logout=(req,res,next)=>{
 
 }
 
-const searchUser=TryCatch((req,res,next)=>{
-    const {user}=req.query;
+const sendRequest = TryCatch(async (req, res, next) => {
+    const { userId } = req.body;
+
+    const request = await RequestModel.findOne({
+        $or: [
+            { $and: [{ sender: req.user }, { reciver: userId }] },
+            { $and: [{ sender: userId }, { reciver: req.user }] }
+        ]
+    });
+    
+
+    if (request) {
+        return res.status(200).json({
+            success: true,
+            message: "Request sent already"
+        });
+    }
+
+    const newRequest = await RequestModel.create({
+        sender: req.user,
+        reciver:userId
+    });
+
+    if (newRequest) {
+        emitEvent(req, NEW_REQUEST, [userId]);
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Friend request sent"
+    });
+});
+
+const acceptRequest=TryCatch(async(req,res,next)=>{
+    const {requestId,accept}=req.body;
+
+    const request =await RequestModel.findById(requestId).populate("sender","name")
+    .populate("reciver","name")
+
+    if(!request){
+        return next(new ErrorHandler("Invalid request Id Provided",404))
+    }
+
+    // console.log(req.user,request.reciver);
+    if(req.user.toString()!==request.reciver._id.toString() ){
+        return next (new ErrorHandler("You are not authorized to accept this request",401));
+
+    }
+
+    if(!accept){
+        //delete the request
+        await request.deleteOne();
+        return res.status(200).json({
+            success:true,
+            message:"request Rejected"
+        })
+    }
+
+        const members=[request.reciver._id,request.sender._id];
+        await Promise.all([
+            ChatModel.create({
+                name:`${request.sender.name}-${request.reciver.name}`,
+                members
+            }),
+            request.deleteOne()
+        ])
+
+        emitEvent(req,REFETCH_CHATS,members)
+
+    return res.status(200).json({
+        success:true,
+        message:"friend request accepted",
+        senderId:request.sender._id
+    })
+
+    
+})
+
+const getAllNotifications=TryCatch(async(req,res,next)=>{
+
+    const requests=await RequestModel.find({reciver:req.user}).
+    populate("sender","name avatar")
+
+    const allRequest=requests.map(({_id,sender})=>({
+        _id,
+        sender:{
+            _id:sender._id,
+            name:sender._name,
+            avatar:sender.avatar.url
+        }
+    }))
+
+    return res.status(200).json({
+        success:true,
+        allRequest
+    })
+
+})
+const searchUser=TryCatch(async(req,res,next)=>{
+    const {name}=req.query;
+
+    const myChats=await ChatModel.find({groupChat:false,members:req.user});
+
+    const allUsersFromMyChat=myChats.map((ele)=>ele.members).flat();
+
+    const allUserExeptMeAndFriends=await UserModel.find({
+       _id:{$nin:allUsersFromMyChat},
+       name:{$regex: name, $options: "i"}
+    })
+
+    const users=allUserExeptMeAndFriends.map(({_id,name,avatar})=>(
+        {
+            _id,
+            name,
+            avatar:avatar.url
+        }
+    ))
+
     res.status(200).json({
         success:true,
-        data:user
+        users
     });
 }
 )
 
-export {login,newUser,getProfile,logout,searchUser};
+const getMyFriends=TryCatch(async(req,res,next)=>{
+    const {chatId}=req.query;
+
+    const chat =await ChatModel.find({members:req.user,groupChat:false})
+    .populate("members","name avatar");
+
+    const friends=chat.map(({members})=>{
+        const otherUser=getOtherMember(members,req.user);
+        return {
+            _id:otherUser._id,
+            name:otherUser.name,
+            avatar:otherUser.avatar.url
+        }
+    })
+
+    if(chatId){
+        const chat =await ChatModel.findById(chatId);
+
+        const availableFriends=friends.filter((friend)=>(
+            !chat.members.includes(friend._id)
+        ))
+
+        res.status(200).json({
+            success:true,
+            availableFriends
+        })
+    }
+    else {
+        return res.status(200).json({
+            success:true,
+            friends
+        })
+    }
+
+})
+
+export {login,
+    newUser,
+    getProfile,
+    logout,
+    searchUser,
+    sendRequest,
+    acceptRequest,
+    getAllNotifications,
+    getMyFriends
+};

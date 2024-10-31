@@ -11,9 +11,6 @@ import { MessageModel } from "../models/message.models.js";
 const newGroupChat=TryCatch(async(req,res,next)=>{
     const {name,members}=req.body;
 
-    if(members.length<2){
-        return next(new ErrorHandler("Group must contain atleat 3 members",400));
-    }
     const allmembers=[...members,req.user];
 
     await ChatModel.create({
@@ -84,10 +81,6 @@ const addMembers = TryCatch(async (req, res, next) => {
   
     if (!chatId || !members) {
       return next(new ErrorHandler("You must provide chatId and members to be added", 400));
-    }
-  
-    if (members.length < 1) {
-      return next(new ErrorHandler("Please provide at least one member", 400));
     }
   
     const chat = await ChatModel.findById(chatId);
@@ -210,51 +203,60 @@ const exitGroup=TryCatch(async(req,res,next)=>{
 
 const sendAttatchments=TryCatch(async(req,res,next)=>{
 
-  const {chatId}=req.body;
-
-  const [chat,me]=await Promise.all([ChatModel.findById(chatId),UserModel.findById(req.user,"name")]);
-
-  if(!chat){
-    return next(new ErrorHandler("No Chat Found",404))
+  const { chatId } = req.body;
+  if(!chatId){
+    return next(new ErrorHandler("Provide chat Id"),400)
   }
 
-  const files=req.files || [];
+  const files = req.files || [];
 
-  if(files.length< 1){
-    return next(new ErrorHandler("Please provide attachments No attachments recieved",400))
-  }
+  if (files.length < 1)
+    return next(new ErrorHandler("Please Upload Attachments", 400));
 
-  const attachments=[];
+  if (files.length > 5)
+    return next(new ErrorHandler("Files Can't be more than 5", 400));
 
-  const messageForRealTime={
-    content:"",
-    chat:chatId,
-    sender:{
-      id:me._id,
-      name:me.name
+  const [chat, me] = await Promise.all([
+    ChatModel.findById(chatId),
+    UserModel.findById(req.user, "name"),
+  ]);
+
+  if (!chat) return next(new ErrorHandler("Chat not found", 404));
+
+  if (files.length < 1)
+    return next(new ErrorHandler("Please provide attachments", 400));
+
+  //   Upload files here
+ const attachments = [];
+
+  const messageForDB = {
+    content: "",
+    attachments,
+    sender: me._id,
+    chat: chatId,
+  };
+
+  const messageForRealTime = {
+    ...messageForDB,
+    sender: {
+      _id: me._id,
+      name: me.name,
     },
-    attachments,
+  };
 
-  }
+  const message = await MessageModel.create(messageForDB);
 
-  const messageForDb={
-    content:"",
-    chat:chatId,
-    sender:me._id,
-    attachments,
-    
-  }
+  emitEvent(req, NEW_ATTATCHMENT, chat.members, {
+    message: messageForRealTime,
+    chatId,
+  });
 
-  const message=await MessageModel.create(messageForDb)
-
-  emitEvent(req,NEW_ATTATCHMENT,chat.members,{message:messageForRealTime,chatId})
-
-  emitEvent(req,NEW_MESSAGE_ALERT,chat.members,{chatId})
+  emitEvent(req, NEW_MESSAGE_ALERT, chat.members, { chatId });
 
   return res.status(200).json({
-    success:true,
-    message
-  })
+    success: true,
+    message,
+  });
 })
 
 const getChatDetails=TryCatch(async(req,res,next)=>{
@@ -289,7 +291,6 @@ const getChatDetails=TryCatch(async(req,res,next)=>{
 const renameGroup=TryCatch(async(req,res,next)=>{
   const {name}=req.body;
   const chatId=req.params.id;
-  console.log(name);
 
   const chat =await ChatModel.findById(chatId);
   if (!chat || !name) {
