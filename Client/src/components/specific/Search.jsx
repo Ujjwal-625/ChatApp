@@ -1,26 +1,53 @@
-import { Dialog, DialogTitle, InputAdornment, List, ListItem, ListItemText, Stack, TextField } from '@mui/material'
-import React, { useState } from 'react'
-import {useInputValidation} from "6pp";
-import { sampleUsers } from '../constants/sampleData';
+import { useInputValidation } from "6pp";
+import { Dialog, DialogTitle, InputAdornment, List, Stack, TextField } from '@mui/material';
+import React, { useEffect, useState } from 'react';
 
 import { Search as SearchIcon } from '@mui/icons-material';
+import { useDispatch, useSelector } from 'react-redux';
+import { useLazySearchUserQuery, useSendFriendRequestMutation } from '../../redux/api/api';
+import { setIsSearch } from '../../redux/reducers/misc';
+import toast from "react-hot-toast";
 import Useritem from '../Shared/Useritem';
+import { useAsyncMutation } from "../../hooks/hooks";
 const Search = () => {
   const search=useInputValidation("");
-  const [users,setUsers]=useState(sampleUsers);
+  const {isSearch}=useSelector((state)=>state.misc);
+  const dispatch=useDispatch();
 
-  function addFriendHandler(){
+  const [searchUser] =useLazySearchUserQuery()
+  const [sendFriendRequest,isLoadinSendFriendRequest]=useAsyncMutation(useSendFriendRequestMutation);
+
+  const [users,setUsers]=useState([]);
+
+  const handleCloseSearch =()=>{
+    dispatch(setIsSearch(false));
+  }
+
+  useEffect(()=>{
+
+    const timeOutId=setTimeout(()=>{
+        searchUser(search.value)
+        .then(({data})=> setUsers(data.users))
+        .catch((err)=>console.log(err))
+
+    },1000)
+
+  },[search.value])
+
+  
+ async function addFriendHandler(id){
+  await sendFriendRequest("Sending friend request...", {userId:id})
 
   }
-  let isLoadinSendFriendRequest=false;
+  // let isLoadinSendFriendRequest=false;
   return (
-    <Dialog open>
+    <Dialog open={isSearch}  onClose={handleCloseSearch}>
       <Stack direction={"column"} width={"25rem"} p={"2rem"}>
         <DialogTitle textAlign={"center"}>Find People</DialogTitle>
         <TextField
-        label=""
+        label="search"
         value={search.value}
-        onChange={search.onChange}
+        onChange={search.changeHandler}
         variant='outlined'
         size='small'
         InputProps={{

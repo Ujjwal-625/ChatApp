@@ -4,12 +4,16 @@ import { lightblue } from '../constants/color';
 import moment from 'moment';
 import { fileFormat } from '../../libs/features';
 import RenderAttachment from './RenderAttachment';
+import {motion} from "framer-motion";
 
 const MessageComponenet = ({message,user}) => {
+  // console.log("user",user);
+
+  // console.log("message",message)
   
     const {sender,content ,attachments=[],createdAt}=message;
     const timeAgo=moment(createdAt).fromNow();
-    const sameSender=sender?._id===user._id;
+    const sameSender= sender?._id===user?.data?._id;
   return (
     <div
     style={{
@@ -22,7 +26,7 @@ const MessageComponenet = ({message,user}) => {
     }}
     >
       {
-        !sameSender && <Typography variant='caption' fontWeight={"600"} color={lightblue}>{sender.name}</Typography>
+        !sameSender && <Typography variant='caption' fontWeight={"600"} color={lightblue}>{sender?.name}</Typography>
       }
       
       {

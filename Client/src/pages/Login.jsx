@@ -1,32 +1,89 @@
 import React, { useState } from "react";
 
 import {
+  Avatar,
+  Button,
   Container,
+  IconButton,
   Paper,
+  Stack,
   TextField,
   Typography,
-  Button,
-  Stack,
-  Avatar,
-  IconButton,
 } from "@mui/material";
 
-import { CameraAlt } from "@mui/icons-material";
-import { VisuallyhiddenInput } from "../components/Style/StyledComponent";
 import { useFileHandler, useInputValidation } from "6pp";
+import { CameraAlt } from "@mui/icons-material";
+import axios from "axios";
+import toast from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import { server } from "../components/constants/config";
+import { VisuallyhiddenInput } from "../components/Style/StyledComponent";
+import { userExist } from "../redux/reducers/auth";
 import { userNameValidator } from "../utils/validators";
+
 const Login = () => {
+
+  const dispatch=useDispatch();
   const [islogin, setislogin] = useState(true);
   const avatar=useFileHandler("single");// for uploading the image
   function toggleLogin() {
     setislogin((prev) => !prev);
   }
 
-  function handleLogin(e){
+ async function handleLogin(e){
     e.preventDefault();
+    const config={
+      withCredentials:true,
+      headers:{
+        "Content-Type":"application/json"
+      }
+    }
+
+    try {
+      const {data}=await axios.post(`${server}/api/v1/user/login`,{
+        username:username.value,
+        password:password.value
+      },config
+      )
+
+      dispatch(userExist(true));
+      toast.success(data.message)
+    } catch (error) {
+      // console.log(error);
+      console.log(error.response.data.errorMessage);
+      toast.error( error?.response?.data?.errorMessage ||error?.response?.data?.message || "something went wrong");
+    }
   }
-  function handleSignUp(e){
+
+
+ async function handleSignUp(e){
     e.preventDefault();
+
+    const formData=new FormData();
+    formData.append("avatar",avatar.file);
+    formData.append("name",name.value);
+    formData.append("bio",bio.value);
+    formData.append("username",username.value);
+    formData.append("password",password.value);
+    formData.append("email",email.value);
+
+    try {
+      const {data}=await axios.post(`${server}/api/v1/user/new`,
+        formData,
+        {
+          withCredentials:true,
+          headers:{
+            "Content-Type":"multipart/form-data"
+          }
+        }
+      );
+
+      dispatch(userExist(true))
+      toast(data.message);
+
+    } catch (error) {
+      toast(error?.response?.data?.errorMessage ||error?.response?.data?.message || "something went wrong");
+    }
   }
 
   const username=useInputValidation("",userNameValidator) //initialize it with empty and provide this in form as value
@@ -34,6 +91,7 @@ const Login = () => {
   const password=useInputValidation(""); //you can also use useStrongpassword from 6pp package for strong password validation
 
   const bio=useInputValidation("");
+  const email=useInputValidation("",)
   
   return (
    <div style={
@@ -205,6 +263,17 @@ const Login = () => {
                 variant="outlined"
                 value={bio.value}
                 onChange={bio.changeHandler}
+              />
+
+              <TextField
+                label="Email"
+                required
+                fullWidth
+                type="email"
+                margin="normal"
+                variant="outlined"
+                value={email.value}
+                onChange={email.changeHandler}
               />
 
               <TextField

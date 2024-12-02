@@ -1,7 +1,7 @@
 import { compare } from "bcrypt";
 import {UserModel} from "../models/user.models.js";
 //create a new user and save it to db and also save in cookie
-import {cookieOptions, emitEvent, sendToken} from "../utils/features.js"
+import {cookieOptions, emitEvent, sendToken, uploadFilesToCloudinary} from "../utils/features.js"
 import {TryCatch} from "../middlewares/error.js"
 import { ErrorHandler } from "../utils/utilty.js";
 import { ChatModel } from "../models/chat.models.js";
@@ -9,12 +9,19 @@ import { RequestModel } from "../models/request.models.js";
 import { NEW_REQUEST, REFETCH_CHATS } from "../constants/events.js";
 import { getOtherMember } from "../lib/helper.js";
 
-const newUser=async(req,res)=>{
+const newUser=TryCatch(async(req,res,next)=>{
     const {name ,username,password ,bio,email}=req.body;
-    const avatar={
-        public_id:"random",
-        url:"randomurl"
+    const file=req.file;
+    if(!file){
+        return next (new ErrorHandler("Please Provide avatar",404))
     }
+    const result=await uploadFilesToCloudinary([file]);
+    // console.log(result)
+    const avatar={
+        public_id:result[0].public_id,
+        url:result[0].secretUrl
+    }
+    // console.log(avatar);
    const user= await UserModel.create({
         avatar,
         name,
@@ -25,19 +32,19 @@ const newUser=async(req,res)=>{
     })
 
    sendToken(res,user,201,"user Created");
-}
+})
 
 const login = TryCatch(async (req, res,next) => {
     const { username, password } = req.body;
 
     const user = await UserModel.findOne({ username }).select("+password");
   
-    if (!user) return next(new ErrorHandler("Invalid Username or Password",404));
+    if (!user) return next(new ErrorHandler("Invalid Username or Password",401));
   
     const isMatch = await compare(password, user.password);
   
     if (!isMatch)
-      return next(new ErrorHandler("Invalid Username or Password", 404));
+      return next(new ErrorHandler("Invalid Username or Password", 401));
   
     sendToken(res, user, 200, `Welcome Back, ${user.name}`);  
 });
@@ -63,6 +70,11 @@ const logout=(req,res,next)=>{
 const sendRequest = TryCatch(async (req, res, next) => {
     const { userId } = req.body;
 
+    if(req.user.toString()=== userId){
+        console.log("You can't send request to yourself");
+        return next(new ErrorHandler("You can't send request to yourself",400));
+    }
+
     const request = await RequestModel.findOne({
         $or: [
             { $and: [{ sender: req.user }, { reciver: userId }] },
@@ -72,10 +84,11 @@ const sendRequest = TryCatch(async (req, res, next) => {
     
 
     if (request) {
-        return res.status(200).json({
-            success: true,
-            message: "Request sent already"
-        });
+        if(request.sender._id.toString()===req.user.toString())
+        return next (new ErrorHandler("Friend request Already Sent",400));
+        else
+        return next (new ErrorHandler("This user has Already sent You Request",400));
+
     }
 
     const newRequest = await RequestModel.create({
@@ -147,10 +160,11 @@ const getAllNotifications=TryCatch(async(req,res,next)=>{
         _id,
         sender:{
             _id:sender._id,
-            name:sender._name,
+            name:sender.name,
             avatar:sender.avatar.url
         }
     }))
+    console.log(allRequest);
 
     return res.status(200).json({
         success:true,

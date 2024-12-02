@@ -2,14 +2,17 @@ import { TryCatch } from "../middlewares/error.js";
 import { ErrorHandler } from "../utils/utilty.js";
 import { ChatModel } from "../models/chat.models.js";
 import { UserModel } from "../models/user.models.js";
-import { deleteFilesFromCloudinary, emitEvent } from "../utils/features.js";
-import { ALERT, NEW_ATTATCHMENT, NEW_MESSAGE_ALERT, REFETCH_CHATS } from "../constants/events.js";
+import { deleteFilesFromCloudinary, emitEvent, uploadFilesToCloudinary } from "../utils/features.js";
+import { ALERT, NEW_ATTATCHMENT, NEW_MESSAGE, NEW_MESSAGE_ALERT, REFETCH_CHATS } from "../constants/events.js";
 import { getOtherMember } from "../lib/helper.js";
 import mongoose from "mongoose";
 import { MessageModel } from "../models/message.models.js";
 
 const newGroupChat=TryCatch(async(req,res,next)=>{
     const {name,members}=req.body;
+    console.log(req.body);
+    console.log("name",name);
+    console.log("members",members);
 
     const allmembers=[...members,req.user];
 
@@ -153,12 +156,14 @@ const removeMember=TryCatch(async(req,res,next)=>{
         return next(new ErrorHandler("Group must have atleast 3 members",400))
       }
 
+      const allmembers=chat.members.map((ele)=>ele.toString())
+
       chat.members=chat.members.filter(member=> member.toString()!==userId.toString());
 
       await chat.save();
 
       emitEvent(req,ALERT,chat.members,`${userToBeRemoved.name} has been removed from the group`)
-      emitEvent(req,REFETCH_CHATS,chat.members);
+      emitEvent(req,REFETCH_CHATS,allmembers);
 
       return res.status(200).json({
         success:true,
@@ -167,7 +172,9 @@ const removeMember=TryCatch(async(req,res,next)=>{
 })
 
 const exitGroup=TryCatch(async(req,res,next)=>{
+  // console.log("Recieved");
   const chatId=req.params.id;
+  // console.log(chatId);
   if(!chatId){
     return next(new ErrorHandler("ChatId not provided ",403));
   }
@@ -181,7 +188,7 @@ const exitGroup=TryCatch(async(req,res,next)=>{
   const remainingMembers=chat.members.filter((member)=>member.toString()!== req.user.toString());
 
   if(remainingMembers.length<3){
-    return next(new ErrorHandler("Group must have atleat 3 members"));
+    return next(new ErrorHandler("Group must have atleat 3 members",401));
   }
 
   if(chat.creater.toString()===req.user.toString()){
@@ -190,8 +197,8 @@ const exitGroup=TryCatch(async(req,res,next)=>{
   }
 
   chat.members=remainingMembers;
-  const [user]=await Promise.all(UserModel.findById(req.user,"name"),chat.save);
-  
+  const user=await UserModel.findById(req.user,"name");
+  await chat.save();  
   emitEvent(req,ALERT,chat.members,`${user.name} has left the group`)
 
   return res.status(200).json({
@@ -204,6 +211,16 @@ const exitGroup=TryCatch(async(req,res,next)=>{
 const sendAttatchments=TryCatch(async(req,res,next)=>{
 
   const { chatId } = req.body;
+
+  const file=req.files || [];
+
+  if(file.length<1 ){
+    return next(new ErrorHandler("Please upload Attachments",400))
+  }
+  if(file.length >5){
+    return next (new ErrorHandler("You can upload atmax 5 Attachments only",400))
+  }
+
   if(!chatId){
     return next(new ErrorHandler("Provide chat Id"),400)
   }
@@ -227,8 +244,14 @@ const sendAttatchments=TryCatch(async(req,res,next)=>{
     return next(new ErrorHandler("Please provide attachments", 400));
 
   //   Upload files here
- const attachments = [];
 
+
+ const tempattachments = await uploadFilesToCloudinary(files);
+ const attachments= tempattachments.map((ele)=>({
+  public_id:ele.public_id,
+  url:ele.secretUrl
+ }))
+//  console.log("attachments",attachments)
   const messageForDB = {
     content: "",
     attachments,
@@ -246,7 +269,7 @@ const sendAttatchments=TryCatch(async(req,res,next)=>{
 
   const message = await MessageModel.create(messageForDB);
 
-  emitEvent(req, NEW_ATTATCHMENT, chat.members, {
+  emitEvent(req, NEW_MESSAGE, chat.members, {
     message: messageForRealTime,
     chatId,
   });
@@ -260,6 +283,7 @@ const sendAttatchments=TryCatch(async(req,res,next)=>{
 })
 
 const getChatDetails=TryCatch(async(req,res,next)=>{
+  // console.log("hi");
   
   if(req.query.populate==="true"){
 
@@ -277,6 +301,7 @@ const getChatDetails=TryCatch(async(req,res,next)=>{
     })
   }
   else {
+    // console.log('inside');
     const chat=await ChatModel.findById(req.params.id)
     if(!chat ){
       return next(new ErrorHandler("Chat not found ",404))
@@ -364,6 +389,16 @@ const getMessages=TryCatch(async(req,res,next)=>{
   const {page=1}=req.query;
   const limit =20;
   const skip =(page-1)*limit
+  
+  const chat=await ChatModel.findById(chatId);
+  
+   if(!chat ){
+    return next(new ErrorHandler("No Chat found with given id ",401));
+   }
+
+   if(!chat.members.includes(req.user.toString())){
+    return next(new ErrorHandler("You are not member of this chat ",401));
+   }
 
   const [message ,totalMessageCount]=await Promise.all([
     MessageModel.find({chat : chatId})

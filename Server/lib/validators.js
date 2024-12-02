@@ -7,7 +7,6 @@ const registerValidator=()=>[
     body("password","Please Password").notEmpty(),
     body("bio","Please Provide bio").notEmpty(),
     body("email","Please Provide Email").notEmpty(),
-    check("avatar","Please Upload Avatar").notEmpty()
 ]
 
 const validatehandler=(req,res,next)=>{
@@ -54,8 +53,6 @@ const exitGroupValidator=()=>[
 
 const sendAttachmentsValidator=()=>[
     body("chatId").exists().withMessage( "Please provide ChatId"),
-    check("files").isEmpty().withMessage("Please provide attachments")
-        .isArray({ min: 1, max: 5 }).withMessage("Number of elements in attachment array should be between 1 to 5")
 ]
 
 const getMessagesValidator=()=>[
@@ -97,6 +94,9 @@ const acceptRequestValidator = () => [
         .withMessage("Accept must be boolean")
 ];
 
+const adminLoginValidator=()=>[
+    body("secretKey","Please Provide SecetKey").exists()
+]
 
 export { registerValidator,
     validatehandler,
@@ -111,5 +111,6 @@ export { registerValidator,
     renameGroupValidator,
     deleteChatValidator,
     sendRequestValidator,
-    acceptRequestValidator
+    acceptRequestValidator,
+    adminLoginValidator
 }

@@ -2,7 +2,7 @@ import React from 'react'
 import { Stack } from '@mui/material'
 import ChatItem from '../Shared/ChatItem'
 import {bggradient} from "../constants/color"
-
+  
 const ChatList = ({
   w = "100%",
   chats = [],

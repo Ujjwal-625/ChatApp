@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react'
+import React, { lazy, Suspense, useEffect } from 'react'
 
 import {BrowserRouter,Routes,Route} from "react-router-dom"
 
@@ -16,16 +16,44 @@ const Messagemanagment =lazy(()=>import("./pages/Admin/Messagemanagment"))
 const  Dashboard=lazy(()=>import("./pages/Admin/Dashboard"));
 
 
+import axios from "axios"
+import {server} from "./components/constants/config.js"
+import {useDispatch,useSelector} from "react-redux"
+import { userExist, userNotExist } from './redux/reducers/auth.js'
+import {Toaster} from "react-hot-toast"
+
 
 import Protectroute from './components/Auth/Protectroute'
 import { LayoutLoader } from './components/Layout/Loaders'
-const user =true;// if user is true then it will show you home page,chat and group else it will redirect to login and vice versa if user is true then it will redirect you form login to home page 
+import { SocketProvider } from './socket.jsx'
+// const user =true;// if user is true then it will show you home page,chat and group else it will redirect to login and vice versa if user is true then it will redirect you form login to home page 
 const App = () => {
-  return (
+
+  const { user, loader } = useSelector((state) => state.auth);
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const response = await axios.get(`${server}/api/v1/user/me`, { withCredentials: true });
+                // console.log("finding user",response.data)
+                dispatch(userExist(response.data));
+            } catch (error) {
+                console.error("Error fetching user:", error);
+                dispatch(userNotExist());
+            }
+        };
+
+        fetchUser();
+
+  },[dispatch])
+  return loader ? <LayoutLoader/>: (
     <BrowserRouter>
      <Suspense fallback={<LayoutLoader/>}>
      <Routes>
-        <Route element={<Protectroute user={user}/>}>
+        <Route element={<SocketProvider>
+          <Protectroute user={user}/>
+        </SocketProvider>}>
           <Route path='/' element={<Home/>}></Route>
           <Route path='/group' element={<Group/>}></Route>
           <Route path='/chat/:chatid' element={<Chat/>}></Route>
@@ -43,6 +71,7 @@ const App = () => {
       <Route path='*' element={<NotFound/>}></Route>
       </Routes>
      </Suspense>
+     <Toaster position='bottom-center'/> 
     </BrowserRouter>
   )
 }
