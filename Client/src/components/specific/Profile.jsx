@@ -16,12 +16,12 @@ const Profile = ({user}) => {
             border:"solid 1px white",
             marginBottom:"1rem"
         }}
-        src={(user?.data?.avatar?.url)}
+        src={(user?.data?.avatar?.url || user?.avatar?.url)}
         />
-        <ProfileCard heading={"bio"} text={user?.data?.bio || ""}  />
-        <ProfileCard heading={"UserName"} Icon={<UserIcon/>} text={user?.data?.username || ""}  />
-        <ProfileCard heading={"Name"} Icon={<FaceIcon/>} text={user?.data?.name || ""}  />
-        <ProfileCard heading={"Joined"} Icon={<CalenderIcon/>} text={moment(user?.data?.createdAt).fromNow()}  />
+        <ProfileCard heading={"bio"} text={user?.data?.bio||user?.bio || ""}  />
+        <ProfileCard heading={"UserName"} Icon={<UserIcon/>} text={user?.data?.username ||user?.username || ""}  />
+        <ProfileCard heading={"Name"} Icon={<FaceIcon/>} text={user?.data?.name || user?.name  || ""}  />
+        <ProfileCard heading={"Joined"} Icon={<CalenderIcon/>} text={moment(user?.data?.createdAt || user?.createdAt).fromNow()}  />
     </Stack>
     
   )

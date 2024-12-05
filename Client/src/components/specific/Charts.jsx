@@ -49,7 +49,7 @@ const LineChart = ({value=[]}) => {
         datasets: [
             {
                 data: value, // Added more data points
-                label: "Revenue",
+                label: "Messages",
                 fill: true,
                 backgroundColor: purplelight,
                 borderColor: purple

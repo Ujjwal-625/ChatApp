@@ -1,10 +1,10 @@
 import { Box, Typography } from '@mui/material';
-import React, { memo } from 'react'
-import { lightblue } from '../constants/color';
+import { motion } from "framer-motion";
 import moment from 'moment';
+import React, { memo } from 'react';
 import { fileFormat } from '../../libs/features';
+import { lightblue } from '../constants/color';
 import RenderAttachment from './RenderAttachment';
-import {motion} from "framer-motion";
 
 const MessageComponenet = ({message,user}) => {
   // console.log("user",user);
@@ -14,8 +14,21 @@ const MessageComponenet = ({message,user}) => {
     const {sender,content ,attachments=[],createdAt}=message;
     const timeAgo=moment(createdAt).fromNow();
     const sameSender= sender?._id===user?.data?._id;
+
+    // const DeleteMessage=(e)=>{
+    //   dispatch(setIsDeleteMessage(true));
+    //   dispatch(setDeleteMessageLocation({
+    //     id: e.currentTarget.id,
+    //     className: e.currentTarget.className
+    //   }))
+    //   console.log("message",message)
+    //   console.log("user",user);
+    // }
   return (
-    <div
+    <motion.div
+    initial={{opacity:0,x:"-100%"}}
+    whileInView={{opacity:1,x:0}}
+    id={message._id}
     style={{
         alignSelf:sameSender?"flex-end":"flex-start",
         backgroundColor: "white",
@@ -51,7 +64,7 @@ const MessageComponenet = ({message,user}) => {
 
 
       <Typography variant='caption' color={"text.secondary"}>{timeAgo}</Typography>
-    </div>
+    </motion.div>
   )
 }
 

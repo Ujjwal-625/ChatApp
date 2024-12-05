@@ -48,9 +48,9 @@ async function LogoutHandler(){
   try {
     const {data}=await axios.get(`${server}/api/v1/user/logout`,{withCredentials:true});
     dispatch(userNotExist())
-    toast(data.message);
+    toast.success(data.message);
   } catch (error) {
-    toast(error?.response?.data?.message ||"something went wrong");
+    toast.error(error?.response?.data?.message ||"something went wrong");
   }
 
 }

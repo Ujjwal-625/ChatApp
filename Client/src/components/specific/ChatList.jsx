@@ -15,7 +15,12 @@ const ChatList = ({
     },
   ],
   handleDeleteChat,
+  user,
 }) => {
+
+  // console.log("online Users",onlineUsers);
+  const userId=user?.data?._id || user?._id;
+  // console.log("userID",userId);
   return (
     <Stack width={w} direction={"column"} overflow={"auto"} height={"100%"} sx={{backgroundImage:bggradient}}>
       {chats?.map((data, index) => {
@@ -26,7 +31,7 @@ const ChatList = ({
         );
 
         const isOnline = members?.some((member) =>
-          onlineUsers.includes(member)
+          onlineUsers.includes(member) && member.toString() !== userId.toString()
         );
 
         return (

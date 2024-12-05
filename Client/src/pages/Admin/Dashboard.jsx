@@ -1,61 +1,76 @@
 import React from 'react'
 import AdminLayout from '../../components/Layout/AdminLayout'
-import { Box, Container, Icon, Paper, Stack, Typography } from '@mui/material';
+import { Box, Container, Icon, Paper, Skeleton, Stack, Typography } from '@mui/material';
 import { AdminPanelSettings as AdminPanelSettingsIcon, Group as GroupIcon, Message as MessageIcon, Notifications as NotificationsIcon, Person as PersonIcon } from '@mui/icons-material';
 import moment from "moment";
 import {SearchField} from "../../components/Style/StyledComponent"
 import { CurveButton } from '../../components/Style/StyledComponent';
 import { DoughnutChart, LineChart } from '../../components/specific/Charts';
 // const isAdmin=false;
-const Appbar= ()=> (
-  <Paper
-    elevation={3}
-    sx={{
-      padding: '2rem',
-      marginBottom: '2rem 0',
-      borderRadius: "1rem"
-    }}
-  >
-   <Stack direction={"row"} spacing={"1rem"} alignItems={"center"}>
-    <AdminPanelSettingsIcon sx={{fontSize:"3rem"}}/>
-    <SearchField placeholder='...Search'/>
-    <CurveButton>Search</CurveButton>
-    <Box flexGrow={1}/>
-    <Typography sx={{display:{xs:"none",lg:"block"}}}>
-      {moment().format('MMMM Do YYYY, h:mm:ss a')}
-    </Typography>
+import {useFetchData} from "6pp"
+import { server } from '../../components/constants/config';
+import { LayoutLoader } from '../../components/Layout/Loaders';
+import { useErrors } from '../../hooks/hooks';
 
-    <NotificationsIcon/>
-   </Stack>
-  </Paper>
-);
 
-const Widgets=()=>{
-  return (
-    <Stack 
-      direction={{
-        xs:"column",
-        sm:"row"
-      }}
-      spacing={"2rem"}
-      justifyContent={"space-between"}
-      alignItems={"center"}
-      margin={"2rem 0"}
-    >
-      <Widget title={"User"} value={5} icon={<PersonIcon/>} />
-      <Widget title={"Chats"} value={10} icon={<GroupIcon/>} />
-      <Widget title={"Messages"} value={10} icon={<MessageIcon/>}  />
-    </Stack>
-  )
-}
 
 const Dashboard = () => {
+
+  const {loading,data,error}=useFetchData(`${server}/api/v1/admin/stats`,"dashboard-stats")
+  // console.log(data);
+  const stats=data?.data || {};
+  useErrors([{
+    error:error,
+    isError:error
+  }])
+
+  console.log("Stats",stats);
   
+  const Appbar= ()=> (
+    <Paper
+      elevation={3}
+      sx={{
+        padding: '2rem',
+        marginBottom: '2rem 0',
+        borderRadius: "1rem"
+      }}
+    >
+     <Stack direction={"row"} spacing={"1rem"} alignItems={"center"}>
+      <AdminPanelSettingsIcon sx={{fontSize:"3rem"}}/>
+      <SearchField placeholder='...Search'/>
+      <CurveButton>Search</CurveButton>
+      <Box flexGrow={1}/>
+      <Typography sx={{display:{xs:"none",lg:"block"}}}>
+        {moment().format('MMMM Do YYYY, h:mm:ss a')}
+      </Typography>
+  
+      <NotificationsIcon/>
+     </Stack>
+    </Paper>
+  );
+
+  const Widgets=()=>{
+    return (
+      <Stack 
+        direction={{
+          xs:"column",
+          sm:"row"
+        }}
+        spacing={"2rem"}
+        justifyContent={"space-between"}
+        alignItems={"center"}
+        margin={"2rem 0"}
+      >
+        <Widget title={"User"} value={stats?.userCount || 0} icon={<PersonIcon/>} />
+        <Widget title={"Chats"} value={stats?.totalChatCount || 0} icon={<GroupIcon/>} />
+        <Widget title={"Messages"} value={stats?.messageCount || 0} icon={<MessageIcon/>}  />
+      </Stack>
+    )
+  }
   return (
-
-
     <AdminLayout>
-        <Container component={"main"}>
+        {
+          loading ? <Skeleton height={"100vh"}/>:<Container component={"main"}>
           <Appbar/>
           <Stack
           marginTop={"2rem"}
@@ -86,7 +101,7 @@ const Dashboard = () => {
               <Typography margin={"2rem 0"} variant="h4">
                 Last Messages
               </Typography>
-              <LineChart value={[20,55,30,70,30,0]}/>
+              <LineChart value={stats?.messages || []}/>
             </Paper>
 
 
@@ -106,7 +121,7 @@ const Dashboard = () => {
                 },
               }}
             >
-              <DoughnutChart labels={["Single Chats","Group Chats"]} value={[23,67]} />
+              <DoughnutChart labels={["Single Chats","Group Chats"]} value={[stats?.totalChatCount-stats?.groupCount || 0,stats.groupCount || 0]} />
               <Stack
                 position={"absolute"}
                 direction={"row"}
@@ -125,6 +140,7 @@ const Dashboard = () => {
 
           <Widgets/>
         </Container>
+        }
     </AdminLayout>
   )
 }

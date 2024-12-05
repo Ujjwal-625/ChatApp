@@ -1,26 +1,26 @@
-import express, { urlencoded } from "express";
-import { connectdb } from "./utils/features.js";
-import dotenv from "dotenv";
-import { errorMiddleware } from "./middlewares/error.js";
+import { v2 as cloudinary } from "cloudinary";
 import cookieParser from "cookie-parser";
-import { Server, Socket } from "socket.io";
-import {createServer} from "http"
-import { v4 as uuid} from "uuid";
 import cors from "cors";
-import {v2 as cloudinary} from "cloudinary"
+import dotenv from "dotenv";
+import express, { urlencoded } from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import { v4 as uuid } from "uuid";
+import { errorMiddleware } from "./middlewares/error.js";
+import { connectdb } from "./utils/features.js";
 
-import userRoute from "./routes/user.router.js"
-import chatRoute from "./routes/chat.route.js"
-import adminRoute from "./routes/admin.route.js"
-import { createGroupChats, createMessagesInAChat, createSingleChats, createUser } from "./seeders/user.seeder.js";
-import { getSockets } from "./lib/helper.js";
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT, START_TYPING, STOP_TYPING } from "./constants/events.js";
-import { MessageModel } from "./models/message.models.js";
-import { compareSync } from "bcrypt";
 import { corsOptions } from "./constants/config.js";
+import { CHAT_JOINED, CHAT_LEAVED, NEW_MESSAGE, NEW_MESSAGE_ALERT, ONLINE_USERS, START_TYPING, STOP_TYPING } from "./constants/events.js";
+import { getSockets } from "./lib/helper.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
+import { MessageModel } from "./models/message.models.js";
+import adminRoute from "./routes/admin.route.js";
+import chatRoute from "./routes/chat.route.js";
+import userRoute from "./routes/user.router.js";
 
 export const userSocketIDs=new Map();
+const onlineUsers=new Set();
+
 
 dotenv.config({
     path:"./.env",
@@ -129,6 +129,42 @@ io.on("connection",(socket)=>{
       const memberSocket=getSockets(members);
       // console.log("stop typing");
       socket.to(memberSocket).emit(STOP_TYPING,{chatId})
+    })
+
+    socket.on(CHAT_JOINED, ({ userId, members }) => {
+      // console.log("chat Joined",userId,members)
+      if(userId){
+      onlineUsers.add(userId.toString());
+  
+      const membersSocket = getSockets(members);
+      // console.log("onlineUses: ",onlineUsers);
+      // console.log("memberSocket",membersSocket);
+
+      io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
+      }
+      // console.log("userId",userId);
+    });
+  
+    socket.on(CHAT_LEAVED, ({ userId, members }) => {
+      // console.log("chat left",userId,members)
+      if(userId){
+      onlineUsers.delete(userId.toString());
+      const membersSocket = getSockets(members);
+
+      // console.log("onlineUses: ",onlineUsers);
+      // console.log("memberSocket",membersSocket);
+      io.to(membersSocket).emit(ONLINE_USERS, Array.from(onlineUsers));
+      }
+      // console.log("userId",userId);
+    });
+
+    socket.on("disconnect",()=>{
+      userSocketIDs.delete(user._id.toString())
+      onlineUsers.delete(user._id.toString())
+      socket.broadcast.emit(ONLINE_USERS,Array.from(onlineUsers))
+      // console.log("disconnected");
+      // console.log("userSockets",userSocketIDs);
+      // console.log("onlineUsers",onlineUsers);
     })
   
     

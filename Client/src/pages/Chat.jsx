@@ -2,7 +2,7 @@ import { AttachFile as AttachFileIcon, Send as SendIcon } from '@mui/icons-mater
 import { IconButton, Stack } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Blue, graycolor } from '../components/constants/color';
-import { ALERT, NEW_MESSAGE, START_TYPING, STOP_TYPING } from '../components/constants/events';
+import { ALERT, CHAT_JOINED, CHAT_LEAVED, NEW_MESSAGE, START_TYPING, STOP_TYPING } from '../components/constants/events';
 import FileMenu from '../components/Dialog/FileMenu';
 import AppLayout from '../components/Layout/AppLayout';
 import MessageComponenet from '../components/Shared/MessageComponenet';
@@ -74,13 +74,15 @@ const Chat = ({chatId,user}) => {
 
 
   useEffect(()=>{
-
+    Socket.emit(CHAT_JOINED,{userId:user?.data?._id || user?._id,members})
     dispatch(removeNewMessagesAlert(chatId))
     return ()=>{
       setMessage("");
     setMessages([]);
     setoldMessages([]);
     setPage(1);
+    // console.log("leaving",user?.data?._id ,members);
+    Socket.emit(CHAT_LEAVED,{userId:user?.data?._id || user?._id,members});
     }
   },[chatId])
 
@@ -90,11 +92,12 @@ const Chat = ({chatId,user}) => {
     }
   },[messages])
 
+  
   useEffect(()=>{
-    if(!chatDetails.data?.chat){
-     return  navigate("/");
+    if(chatDetails.isError){
+      navigate("/");
     }
-  },[chatDetails.data])
+  },[chatDetails.isError])
 
   const newMessageListener=useCallback((data)=>{
     if(data.chatId!=chatId)return ;
@@ -136,6 +139,7 @@ const Chat = ({chatId,user}) => {
   const alertListener = useCallback(
     (data) => {
       if (data.chatId !== chatId) return;
+      
       const messageForAlert = {
         content: data.message,
         sender: {

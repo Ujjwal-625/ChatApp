@@ -25,6 +25,7 @@ const Login = () => {
 
   const dispatch=useDispatch();
   const [islogin, setislogin] = useState(true);
+  const [isLoading ,setisLoading ]=useState(false);
   const avatar=useFileHandler("single");// for uploading the image
   function toggleLogin() {
     setislogin((prev) => !prev);
@@ -32,6 +33,8 @@ const Login = () => {
 
  async function handleLogin(e){
     e.preventDefault();
+    setisLoading(true);
+    const toastid=toast.loading("Loging in ...");
     const config={
       withCredentials:true,
       headers:{
@@ -45,20 +48,24 @@ const Login = () => {
         password:password.value
       },config
       )
-
-      dispatch(userExist(true));
-      toast.success(data.message)
+      console.log(data);
+      dispatch(userExist(data.user));
+      toast.success(data.message,{id:toastid})
     } catch (error) {
       // console.log(error);
       console.log(error.response.data.errorMessage);
-      toast.error( error?.response?.data?.errorMessage ||error?.response?.data?.message || "something went wrong");
+      toast.error( error?.response?.data?.errorMessage ||error?.response?.data?.message || "something went wrong" ,{id:toastid});
+    }
+    finally{
+      setisLoading(false);
     }
   }
 
 
  async function handleSignUp(e){
     e.preventDefault();
-
+    setisLoading(true);
+    const toastId=toast.loading("Signing Up ..")
     const formData=new FormData();
     formData.append("avatar",avatar.file);
     formData.append("name",name.value);
@@ -78,11 +85,14 @@ const Login = () => {
         }
       );
 
-      dispatch(userExist(true))
-      toast(data.message);
+      dispatch(userExist(data.user))
+      toast.success(data.message,{id:toastId});
 
     } catch (error) {
-      toast(error?.response?.data?.errorMessage ||error?.response?.data?.message || "something went wrong");
+      toast.error(error?.response?.data?.errorMessage ||error?.response?.data?.message || "something went wrong",{id:toastId});
+    }
+    finally{
+      setisLoading(false);
     }
   }
 
@@ -164,6 +174,7 @@ const Login = () => {
                 variant="contained"
                 color="primary"
                 type="submit"
+                disabled={isLoading}
               >
                 Login
               </Button>
@@ -172,7 +183,7 @@ const Login = () => {
                 OR
               </Typography>
 
-              <Button fullWidth variant="text" onClick={toggleLogin}>
+              <Button disabled={isLoading} fullWidth variant="text" onClick={toggleLogin}>
                 Don't have acccout Register
               </Button>
             </form>
@@ -301,6 +312,7 @@ const Login = () => {
                 variant="contained"
                 color="primary"
                 type="submit"
+                disabled={isLoading}
               >
                 Sign Up
               </Button>
@@ -309,7 +321,7 @@ const Login = () => {
                 OR
               </Typography>
 
-              <Button fullWidth variant="text" onClick={toggleLogin}>
+              <Button disabled={isLoading} fullWidth variant="text" onClick={toggleLogin}>
                 Already have acccout Login
               </Button>
             </form>

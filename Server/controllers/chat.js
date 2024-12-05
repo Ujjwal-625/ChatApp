@@ -162,7 +162,7 @@ const removeMember=TryCatch(async(req,res,next)=>{
 
       await chat.save();
 
-      emitEvent(req,ALERT,chat.members,`${userToBeRemoved.name} has been removed from the group`)
+      emitEvent(req,ALERT,chat.members,{message:`${userToBeRemoved.name} has been removed from the group`,chatId})
       emitEvent(req,REFETCH_CHATS,allmembers);
 
       return res.status(200).json({
@@ -199,7 +199,7 @@ const exitGroup=TryCatch(async(req,res,next)=>{
   chat.members=remainingMembers;
   const user=await UserModel.findById(req.user,"name");
   await chat.save();  
-  emitEvent(req,ALERT,chat.members,`${user.name} has left the group`)
+  emitEvent(req,ALERT,chat.members,{message:`${user.name} has left the group`,chatId})
 
   return res.status(200).json({
     success:true,

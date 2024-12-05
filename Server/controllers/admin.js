@@ -70,10 +70,11 @@ const getAllMessages=TryCatch(async(req,res,next)=>{
 
     const tranformedMessages=messages.map(({_id,chat ,sender,content,attachments,createdAt})=>({
         _id,
-        content,
+        content:content || "No content",
         attachments,
         groupChat:chat.groupChat,
         createdAt,
+        chat:chat._id,
         sender:{
             _id:sender._id,
             name:sender.name,

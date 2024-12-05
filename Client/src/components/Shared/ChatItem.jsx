@@ -3,6 +3,8 @@ import React, { memo } from 'react'
 import { Link } from '../Style/StyledComponent'
 import { Box, Stack, Typography } from '@mui/material'
 import AvtarCard from './AvtarCard'
+import {motion} from "framer-motion"
+
 const ChatItem = ({
   avatar=[],
   name,
@@ -17,7 +19,11 @@ const ChatItem = ({
   return (
     <Link sx={{ padding:"0"}}
      to={`/chat/${_id}`} onContextMenu={(e)=>handleDeleteChat(e,_id,groupChat)}> 
-        <div style={{
+        <motion.div
+        initial={{opacity:0,y:"-100%"}}
+        whileInView={{opacity:1,y:0}}
+        transition={{delay:index*0.01}}
+         style={{
           display:"flex",
           alignItems:"center",
           padding:"1rem",
@@ -53,7 +59,7 @@ const ChatItem = ({
                 </Box>
               )
             }
-        </div>
+        </motion.div>
     </Link>
   )
 }
